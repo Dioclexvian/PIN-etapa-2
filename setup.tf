@@ -2,8 +2,6 @@ provider "aws" {
   region = "us-east-1"
 }
 
-
-
 #Get Linux AMI ID using SSM Parameter endpoint in us-east-1
 #data "aws_ssm_parameter" "webserver-ami" {
 #  name = "/aws/service/ami-amazon-linux-latest/amzn2-ami-hvm-x86_64-gp2"
@@ -15,7 +13,7 @@ resource "aws_vpc" "vpc" {
   enable_dns_support   = true
   enable_dns_hostnames = true
   tags = {
-    Name = "terraform-vpc"
+    Name = "pin2_vpc"
   }
 
 }
@@ -23,6 +21,9 @@ resource "aws_vpc" "vpc" {
 #Create IGW in us-east-1
 resource "aws_internet_gateway" "igw" {
   vpc_id = aws_vpc.vpc.id
+  tags = {
+    Name = "pin2_igw"
+  }
 }
 
 #Get main route table to modify
@@ -44,7 +45,7 @@ resource "aws_default_route_table" "internet_route" {
     gateway_id = aws_internet_gateway.igw.id
   }
   tags = {
-    Name = "Terraform-RouteTable"
+    Name = "pin2-RouteTable"
   }
 }
 
@@ -55,15 +56,19 @@ data "aws_availability_zones" "azs" {
 
 #Create subnet # 1 in us-east-1
 resource "aws_subnet" "subnet" {
-  availability_zone = element(data.aws_availability_zones.azs.names, 0)
+  # availability_zone = element(data.aws_availability_zones.azs.names, 0)
   vpc_id            = aws_vpc.vpc.id
   cidr_block        = "10.0.1.0/24"
+  availability_zone = data.aws_availability_zones.available.names[0]
+  tags = {
+    Name = "Main_subnet"
+  }
 }
 
 
 #Create SG for allowing TCP/80 & TCP/22
-resource "aws_security_group" "sg" {
-  name        = "sg"
+resource "aws_security_group" "pin2_sg" {
+  name        = "pin2_security-group"
   description = "Allow TCP/80 & TCP/22"
   vpc_id      = aws_vpc.vpc.id
   ingress {
@@ -86,8 +91,14 @@ resource "aws_security_group" "sg" {
     protocol    = "-1"
     cidr_blocks = ["0.0.0.0/0"]
   }
+
+  tags = {
+    Name = "pin2_aws_sg"
+  }
 }
 
+# Output con la IP pública (si se necesita, por ejemplo, para una instancia de EC2)
 output "Webserver-Public-IP" {
   value = aws_instance.webserver.public_ip
+  description = "La Ip publica de la instancia principal"
 }
