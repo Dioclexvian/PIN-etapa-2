@@ -7,6 +7,6 @@ terraform {
   }
 }
 
-module "DynamoS3" {
-  source = "./modules/bootstrap/bootstrap.tf"
+module "bootstrap" {
+  source = "./modules/bootstrap"
 }
